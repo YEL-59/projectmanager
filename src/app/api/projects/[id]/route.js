@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sql } from '@vercel/postgres'
-import { initDatabase } from '@/lib/db'
+import { sql, initDatabase } from '@/lib/db'
 
 // Initialize database on first request
 let dbInitialized = false
@@ -10,12 +9,18 @@ export async function GET(request, { params }) {
   try {
     // Initialize database if not already done
     if (!dbInitialized) {
-      await initDatabase()
+      const initialized = await initDatabase()
       dbInitialized = true
+      if (!initialized) {
+        return NextResponse.json(
+          { error: 'Database not configured. Please add a Postgres database (Neon, Supabase, etc.) from Vercel Marketplace.' },
+          { status: 503 }
+        )
+      }
     }
 
     const { id } = params
-    const result = await sql`SELECT * FROM projects WHERE id = ${id}`
+    const result = await sql.query`SELECT * FROM projects WHERE id = ${id}`
 
     if (result.rows.length === 0) {
       return NextResponse.json(
@@ -39,15 +44,21 @@ export async function PUT(request, { params }) {
   try {
     // Initialize database if not already done
     if (!dbInitialized) {
-      await initDatabase()
+      const initialized = await initDatabase()
       dbInitialized = true
+      if (!initialized) {
+        return NextResponse.json(
+          { error: 'Database not configured. Please add a Postgres database (Neon, Supabase, etc.) from Vercel Marketplace.' },
+          { status: 503 }
+        )
+      }
     }
 
     const { id } = params
     const data = await request.json()
 
     // Check if project exists
-    const existing = await sql`SELECT * FROM projects WHERE id = ${id}`
+    const existing = await sql.query`SELECT * FROM projects WHERE id = ${id}`
     if (existing.rows.length === 0) {
       return NextResponse.json(
         { error: 'Project not found' },
@@ -57,7 +68,7 @@ export async function PUT(request, { params }) {
 
     const existingProject = existing.rows[0]
 
-    const result = await sql`
+    const result = await sql.query`
       UPDATE projects SET
         "projectName" = ${data.projectName ?? existingProject.projectName},
         days = ${data.days ?? existingProject.days},
@@ -95,14 +106,20 @@ export async function DELETE(request, { params }) {
   try {
     // Initialize database if not already done
     if (!dbInitialized) {
-      await initDatabase()
+      const initialized = await initDatabase()
       dbInitialized = true
+      if (!initialized) {
+        return NextResponse.json(
+          { error: 'Database not configured. Please add a Postgres database (Neon, Supabase, etc.) from Vercel Marketplace.' },
+          { status: 503 }
+        )
+      }
     }
 
     const { id } = params
 
     // Check if project exists
-    const existing = await sql`SELECT * FROM projects WHERE id = ${id}`
+    const existing = await sql.query`SELECT * FROM projects WHERE id = ${id}`
     if (existing.rows.length === 0) {
       return NextResponse.json(
         { error: 'Project not found' },
@@ -110,7 +127,7 @@ export async function DELETE(request, { params }) {
       )
     }
 
-    await sql`DELETE FROM projects WHERE id = ${id}`
+    await sql.query`DELETE FROM projects WHERE id = ${id}`
 
     return NextResponse.json({ message: 'Project deleted successfully' })
   } catch (error) {

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sql } from '@vercel/postgres'
-import { initDatabase } from '@/lib/db'
+import { sql, initDatabase } from '@/lib/db'
 
 // Initialize database on first request
 let dbInitialized = false
@@ -10,8 +9,14 @@ export async function GET(request) {
   try {
     // Initialize database if not already done
     if (!dbInitialized) {
-      await initDatabase()
+      const initialized = await initDatabase()
       dbInitialized = true
+      if (!initialized) {
+        return NextResponse.json(
+          { error: 'Database not configured. Please add a Postgres database (Neon, Supabase, etc.) from Vercel Marketplace.', projects: [] },
+          { status: 503 }
+        )
+      }
     }
 
     const { searchParams } = new URL(request.url)
@@ -21,29 +26,30 @@ export async function GET(request) {
     let projects
 
     // Build query based on filters
+    let projects
     if (statusFilter && statusFilter !== 'all' && searchTerm) {
       const searchPattern = `%${searchTerm}%`
-      projects = await sql`
+      projects = await sql.query`
         SELECT * FROM projects 
         WHERE "deliveryStatus" = ${statusFilter} 
         AND ("projectName" ILIKE ${searchPattern} OR assignees ILIKE ${searchPattern} OR department ILIKE ${searchPattern})
         ORDER BY "createdAt" DESC
       `
     } else if (statusFilter && statusFilter !== 'all') {
-      projects = await sql`
+      projects = await sql.query`
         SELECT * FROM projects 
         WHERE "deliveryStatus" = ${statusFilter}
         ORDER BY "createdAt" DESC
       `
     } else if (searchTerm) {
       const searchPattern = `%${searchTerm}%`
-      projects = await sql`
+      projects = await sql.query`
         SELECT * FROM projects 
         WHERE "projectName" ILIKE ${searchPattern} OR assignees ILIKE ${searchPattern} OR department ILIKE ${searchPattern}
         ORDER BY "createdAt" DESC
       `
     } else {
-      projects = await sql`SELECT * FROM projects ORDER BY "createdAt" DESC`
+      projects = await sql.query`SELECT * FROM projects ORDER BY "createdAt" DESC`
     }
     
     return NextResponse.json(projects.rows)
@@ -61,8 +67,14 @@ export async function POST(request) {
   try {
     // Initialize database if not already done
     if (!dbInitialized) {
-      await initDatabase()
+      const initialized = await initDatabase()
       dbInitialized = true
+      if (!initialized) {
+        return NextResponse.json(
+          { error: 'Database not configured. Please add a Postgres database (Neon, Supabase, etc.) from Vercel Marketplace.' },
+          { status: 503 }
+        )
+      }
     }
 
     const data = await request.json()
@@ -75,7 +87,7 @@ export async function POST(request) {
       )
     }
 
-    const result = await sql`
+    const result = await sql.query`
       INSERT INTO projects (
         "projectName", days, profile, "deliveryStatus", assignees, department,
         "currentPhase", deadline, amount, value, "orderSheet", "planFor", team,
