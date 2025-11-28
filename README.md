@@ -17,7 +17,7 @@ A full-stack project management application built with Next.js 15, featuring a S
 
 - **Frontend**: Next.js 15, React 19, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Database**: SQLite (better-sqlite3)
+- **Database**: Vercel Postgres (for production) / SQLite (for local development)
 - **UI Components**: shadcn/ui, Radix UI
 
 ## Getting Started
@@ -41,7 +41,17 @@ npm run dev
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-The database will be automatically created in the `data/` directory on first run.
+### Database Setup
+
+#### For Local Development (SQLite)
+The app uses Vercel Postgres by default. For local development, you can use SQLite by installing `better-sqlite3`:
+```bash
+npm install better-sqlite3
+```
+Then update `src/lib/db.js` to use SQLite instead of Vercel Postgres.
+
+#### For Production (Vercel Postgres)
+When deploying to Vercel, the database will be automatically set up. See deployment section below.
 
 ## Project Structure
 
@@ -63,7 +73,7 @@ projectmanager/
 │       ├── db.js                 # Database initialization and connection
 │       └── utils.js
 └── data/
-    └── projects.db               # SQLite database (auto-created)
+    └── projects.db               # SQLite database (local dev only)
 ```
 
 ## API Endpoints
@@ -95,6 +105,54 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Step 1: Push to GitHub
+1. Create a new repository on GitHub
+2. Push your code to GitHub:
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git remote add origin <your-github-repo-url>
+git push -u origin main
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Step 2: Deploy to Vercel
+1. Go to [vercel.com](https://vercel.com) and sign in
+2. Click "Add New Project"
+3. Import your GitHub repository
+4. Vercel will automatically detect Next.js and configure settings
+
+### Step 3: Set Up Vercel Postgres
+1. In your Vercel project dashboard, go to the **Storage** tab
+2. Click **Create Database** → Select **Postgres**
+3. Choose a name for your database (e.g., "project-manager-db")
+4. Select a region closest to you
+5. Click **Create**
+
+### Step 4: Connect Database to Your Project
+1. Vercel will automatically add the database connection environment variables
+2. The `@vercel/postgres` package will automatically use these variables
+3. Your database will be initialized automatically on first API call
+
+### Step 5: Deploy
+1. Click **Deploy** in Vercel
+2. Once deployed, your app will be live at `https://your-project.vercel.app`
+3. The database will be automatically initialized when you first use the app
+
+### Using Your Deployed App
+- Your app URL: `https://your-project.vercel.app`
+- All API routes work: `https://your-project.vercel.app/api/projects`
+- Data persists across deployments
+- No additional configuration needed!
+
+### Environment Variables
+Vercel Postgres automatically provides these environment variables (you don't need to set them manually):
+- `POSTGRES_URL`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL_NON_POOLING`
+- `POSTGRES_USER`
+- `POSTGRES_HOST`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DATABASE`
+
+The `@vercel/postgres` package uses these automatically.

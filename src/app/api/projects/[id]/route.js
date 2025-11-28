@@ -1,20 +1,30 @@
 import { NextResponse } from 'next/server'
-import db from '@/lib/db'
+import { sql } from '@vercel/postgres'
+import { initDatabase } from '@/lib/db'
+
+// Initialize database on first request
+let dbInitialized = false
 
 // GET single project by ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params
-    const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+    // Initialize database if not already done
+    if (!dbInitialized) {
+      await initDatabase()
+      dbInitialized = true
+    }
 
-    if (!project) {
+    const { id } = params
+    const result = await sql`SELECT * FROM projects WHERE id = ${id}`
+
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Project not found' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json(project)
+    return NextResponse.json(result.rows[0])
   } catch (error) {
     console.error('Error fetching project:', error)
     return NextResponse.json(
@@ -27,62 +37,50 @@ export async function GET(request, { params }) {
 // PUT update project
 export async function PUT(request, { params }) {
   try {
+    // Initialize database if not already done
+    if (!dbInitialized) {
+      await initDatabase()
+      dbInitialized = true
+    }
+
     const { id } = params
     const data = await request.json()
 
     // Check if project exists
-    const existing = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
-    if (!existing) {
+    const existing = await sql`SELECT * FROM projects WHERE id = ${id}`
+    if (existing.rows.length === 0) {
       return NextResponse.json(
         { error: 'Project not found' },
         { status: 404 }
       )
     }
 
-    const stmt = db.prepare(`
+    const existingProject = existing.rows[0]
+
+    const result = await sql`
       UPDATE projects SET
-        projectName = ?,
-        days = ?,
-        profile = ?,
-        deliveryStatus = ?,
-        assignees = ?,
-        department = ?,
-        currentPhase = ?,
-        deadline = ?,
-        amount = ?,
-        value = ?,
-        orderSheet = ?,
-        planFor = ?,
-        team = ?,
-        deliveryDate = ?,
-        notes = ?,
-        timing = ?,
-        updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
+        "projectName" = ${data.projectName ?? existingProject.projectName},
+        days = ${data.days ?? existingProject.days},
+        profile = ${data.profile ?? existingProject.profile},
+        "deliveryStatus" = ${data.deliveryStatus ?? existingProject.deliveryStatus},
+        assignees = ${data.assignees || existingProject.assignees},
+        department = ${data.department || existingProject.department},
+        "currentPhase" = ${data.currentPhase ?? existingProject.currentPhase},
+        deadline = ${data.deadline ?? existingProject.deadline},
+        amount = ${data.amount ?? existingProject.amount},
+        value = ${data.value ?? existingProject.value},
+        "orderSheet" = ${data.orderSheet ?? existingProject.orderSheet},
+        "planFor" = ${data.planFor ?? existingProject.planFor},
+        team = ${data.team ?? existingProject.team},
+        "deliveryDate" = ${data.deliveryDate ?? existingProject.deliveryDate},
+        notes = ${data.notes ?? existingProject.notes},
+        timing = ${data.timing ?? existingProject.timing},
+        "updatedAt" = CURRENT_TIMESTAMP
+      WHERE id = ${id}
+      RETURNING *
+    `
 
-    stmt.run(
-      data.projectName || existing.projectName,
-      data.days ?? existing.days,
-      data.profile ?? existing.profile,
-      data.deliveryStatus ?? existing.deliveryStatus,
-      data.assignees || existing.assignees,
-      data.department || existing.department,
-      data.currentPhase ?? existing.currentPhase,
-      data.deadline ?? existing.deadline,
-      data.amount ?? existing.amount,
-      data.value ?? existing.value,
-      data.orderSheet ?? existing.orderSheet,
-      data.planFor ?? existing.planFor,
-      data.team ?? existing.team,
-      data.deliveryDate ?? existing.deliveryDate,
-      data.notes ?? existing.notes,
-      data.timing ?? existing.timing,
-      id
-    )
-
-    const updatedProject = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
-    return NextResponse.json(updatedProject)
+    return NextResponse.json(result.rows[0])
   } catch (error) {
     console.error('Error updating project:', error)
     return NextResponse.json(
@@ -95,18 +93,24 @@ export async function PUT(request, { params }) {
 // DELETE project
 export async function DELETE(request, { params }) {
   try {
+    // Initialize database if not already done
+    if (!dbInitialized) {
+      await initDatabase()
+      dbInitialized = true
+    }
+
     const { id } = params
 
     // Check if project exists
-    const existing = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
-    if (!existing) {
+    const existing = await sql`SELECT * FROM projects WHERE id = ${id}`
+    if (existing.rows.length === 0) {
       return NextResponse.json(
         { error: 'Project not found' },
         { status: 404 }
       )
     }
 
-    db.prepare('DELETE FROM projects WHERE id = ?').run(id)
+    await sql`DELETE FROM projects WHERE id = ${id}`
 
     return NextResponse.json({ message: 'Project deleted successfully' })
   } catch (error) {
@@ -117,4 +121,3 @@ export async function DELETE(request, { params }) {
     )
   }
 }
-
