@@ -1,24 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Project Manager - Full Stack Next.js Application
+
+A full-stack project management application built with Next.js 15, featuring a SQLite database backend for tracking personal projects.
+
+## Features
+
+- ✅ **Full CRUD Operations**: Create, Read, Update, and Delete projects
+- ✅ **SQLite Database**: Persistent data storage using better-sqlite3
+- ✅ **RESTful API**: Backend API routes for all project operations
+- ✅ **Real-time Search**: Search projects by name, assignees, or department
+- ✅ **Status Filtering**: Filter projects by delivery status
+- ✅ **Project Details**: View comprehensive project information
+- ✅ **Financial Tracking**: Track budget, value, and ROI for each project
+- ✅ **Modern UI**: Built with Tailwind CSS and shadcn/ui components
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: SQLite (better-sqlite3)
+- **UI Components**: shadcn/ui, Radix UI
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ installed
+- npm, yarn, pnpm, or bun
+
+### Installation
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Run the development server:
+```bash
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+3. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The database will be automatically created in the `data/` directory on first run.
+
+## Project Structure
+
+```
+projectmanager/
+├── src/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── projects/          # API routes for CRUD operations
+│   │   ├── page.js               # Main page component
+│   │   └── layout.js
+│   ├── components/
+│   │   ├── AddProjectDialog.jsx  # Dialog for adding new projects
+│   │   ├── EditProjectDialog.jsx # Dialog for editing projects
+│   │   ├── ProjectTable.jsx      # Projects table component
+│   │   ├── ProjectDetailsDialog.jsx
+│   │   └── ui/                   # shadcn/ui components
+│   └── lib/
+│       ├── db.js                 # Database initialization and connection
+│       └── utils.js
+└── data/
+    └── projects.db               # SQLite database (auto-created)
+```
+
+## API Endpoints
+
+- `GET /api/projects` - Get all projects (supports `?status=` and `?search=` query params)
+- `POST /api/projects` - Create a new project
+- `GET /api/projects/[id]` - Get a single project
+- `PUT /api/projects/[id]` - Update a project
+- `DELETE /api/projects/[id]` - Delete a project
+
+## Database Schema
+
+The `projects` table includes the following fields:
+- Basic info: projectName, days, profile, deliveryStatus
+- Team info: assignees, department, team, currentPhase
+- Timeline: deadline, deliveryDate, timing
+- Financial: amount (budget), value
+- Additional: orderSheet, planFor, notes
+- Metadata: createdAt, updatedAt
 
 ## Learn More
 
